@@ -1,51 +1,32 @@
 import logging
 import os
 
-from telegram import Bot, Update
-from telegram.ext import Updater, MessageHandler, Filters, CallbackContext
-from telegram.utils.request import Request
+from telegram.ext import Updater, MessageHandler, Filters
 from dotenv import load_dotenv
-from adminpanel.models import Profile, Message
 from setting.settings import BASE_DIR
+from telebot.handlers import do_echo
 
 logging.basicConfig(level=logging.INFO)
 
 load_dotenv(BASE_DIR / 'config.env')
 
 
-def do_echo(update: Update, context: CallbackContext):
-    # get or add a profile to the DB
-    p, _ = Profile.objects.get_or_create(
-        external_id=update.message.chat_id,
-        defaults={
-            'name': update.message.from_user.full_name
-        }
-    )
-
-    # add a message to the DB
-    m = Message(
-        profile=p,
-        text=update.message.text
-    )
-    m.save()
-
-    update.message.reply_text(update.message.text)
-
-
-def run():
-    request = Request(
-        connect_timeout=0.5,
-        read_timeout=1.0
-    )
-    bot = Bot(
-        request=request,
-        token=os.getenv('TG_TOKEN')
-    )
-    updater = Updater(
-        bot=bot,
-        use_context=True
-    )
-
+def _add_handlers(updater: Updater):
     updater.dispatcher.add_handler(MessageHandler(Filters.text, do_echo))
+
+
+def start_polling():
+    updater = Updater(os.getenv('TG_TOKEN'), use_context=True)
+    _add_handlers(updater)
     updater.start_polling()
+    updater.idle()
+
+
+def start_webhook():
+    updater = Updater(os.getenv('TG_TOKEN'), use_context=True)
+    _add_handlers(updater)
+    updater.start_webhook(listen="0.0.0.0",
+                          port=os.environ.get('PORT', '8443'),
+                          url_path=os.getenv('TG_TOKEN'),
+                          webhook_url=os.getenv('WEBHOOK_URL') + os.getenv('TG_TOKEN'))
     updater.idle()
