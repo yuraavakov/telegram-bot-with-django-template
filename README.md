@@ -31,16 +31,23 @@ python manage.py createsuperuser
 Create config.env with token:
 ```
 TG_TOKEN=YOUR_TOKEN
+PORT=80
+WEBHOOK_URL=https://example.com/
 ```
 Run admin panel:
 ```console
 workon venv
 python manage.py runserver
 ```
-Run bot:
+Run bot in Long Polling mode:
 ```console
 workon venv
-python manage.py runbot
+python manage.py runbot --polling
+```
+or run bot in Webhook mode:
+```console
+workon venv
+python manage.py runbot --webhook
 ```
 ## Usage
 Open admin panel at http://127.0.0.1:8000/admin
